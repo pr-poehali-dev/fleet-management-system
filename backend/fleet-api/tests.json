@@ -1,0 +1,43 @@
+{
+  "tests": [
+    {
+      "name": "Get vehicles list",
+      "method": "GET",
+      "path": "/?entity=vehicles",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "number": "string",
+          "model": "string",
+          "status": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get drivers list",
+      "method": "GET",
+      "path": "/?entity=drivers",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "name": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get statistics",
+      "method": "GET",
+      "path": "/?entity=stats",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "active_vehicles": "number",
+        "active_routes": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

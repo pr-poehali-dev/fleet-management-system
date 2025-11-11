@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,69 +10,75 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
+import { fetchVehicles, fetchDrivers, fetchRequests, fetchRoutes, fetchStats } from '@/lib/api';
 
 type Vehicle = {
-  id: string;
+  id: number;
   number: string;
   model: string;
   status: 'active' | 'maintenance' | 'idle';
 };
 
 type Driver = {
-  id: string;
+  id: number;
   name: string;
   license: string;
-  vehicle: string;
+  vehicle_number: string | null;
   status: 'available' | 'on_route' | 'off_duty';
 };
 
 type Request = {
-  id: string;
+  id: number;
   date: string;
-  from: string;
-  to: string;
+  from_address: string;
+  to_address: string;
   status: 'pending' | 'approved' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
 };
 
 type Route = {
-  id: string;
-  vehicle: string;
-  driver: string;
-  distance: string;
-  fuel: string;
+  id: number;
+  vehicle_number: string;
+  driver_name: string;
+  distance_km: number;
+  fuel_liters: number;
   status: 'planned' | 'active' | 'completed';
+};
+
+type Stats = {
+  active_vehicles: number;
+  active_routes: number;
+  pending_requests: number;
+  total_fuel: number;
 };
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [vehicles] = useState<Vehicle[]>([
-    { id: '1', number: 'А123БВ777', model: 'Mercedes Sprinter', status: 'active' },
-    { id: '2', number: 'К456ЕР199', model: 'КАМАЗ 5320', status: 'maintenance' },
-    { id: '3', number: 'Т789УС116', model: 'ГАЗель Next', status: 'active' },
-    { id: '4', number: 'М321НО197', model: 'Iveco Daily', status: 'idle' },
-  ]);
+  
+  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+    queryKey: ['vehicles'],
+    queryFn: fetchVehicles,
+  });
 
-  const [drivers] = useState<Driver[]>([
-    { id: '1', name: 'Иванов Иван Иванович', license: 'BC', vehicle: 'А123БВ777', status: 'on_route' },
-    { id: '2', name: 'Петров Петр Петрович', license: 'BCE', vehicle: 'К456ЕР199', status: 'off_duty' },
-    { id: '3', name: 'Сидоров Сергей Сергеевич', license: 'BC', vehicle: 'Т789УС116', status: 'on_route' },
-    { id: '4', name: 'Козлов Андрей Владимирович', license: 'BC', vehicle: '-', status: 'available' },
-  ]);
+  const { data: drivers = [] } = useQuery<Driver[]>({
+    queryKey: ['drivers'],
+    queryFn: fetchDrivers,
+  });
 
-  const [requests] = useState<Request[]>([
-    { id: '1', date: '11.11.2025', from: 'Москва, Тверская 10', to: 'Тула, Ленина 5', status: 'approved', priority: 'high' },
-    { id: '2', date: '11.11.2025', from: 'СПб, Невский 25', to: 'Москва, Садовая 12', status: 'in_progress', priority: 'medium' },
-    { id: '3', date: '12.11.2025', from: 'Казань, Баумана 3', to: 'Н.Новгород, Горького 8', status: 'pending', priority: 'low' },
-    { id: '4', date: '12.11.2025', from: 'Екатеринбург, Ленина 20', to: 'Челябинск, Труда 15', status: 'approved', priority: 'high' },
-  ]);
+  const { data: requests = [] } = useQuery<Request[]>({
+    queryKey: ['requests'],
+    queryFn: fetchRequests,
+  });
 
-  const [routes] = useState<Route[]>([
-    { id: '1', vehicle: 'А123БВ777', driver: 'Иванов И.И.', distance: '342 км', fuel: '48 л', status: 'active' },
-    { id: '2', vehicle: 'Т789УС116', driver: 'Сидоров С.С.', distance: '125 км', fuel: '18 л', status: 'active' },
-    { id: '3', vehicle: 'М321НО197', driver: 'Козлов А.В.', distance: '280 км', fuel: '38 л', status: 'planned' },
-    { id: '4', vehicle: 'К456ЕР199', driver: 'Петров П.П.', distance: '520 км', fuel: '85 л', status: 'completed' },
-  ]);
+  const { data: routes = [] } = useQuery<Route[]>({
+    queryKey: ['routes'],
+    queryFn: fetchRoutes,
+  });
+
+  const { data: stats } = useQuery<Stats>({
+    queryKey: ['stats'],
+    queryFn: fetchStats,
+  });
 
   const getStatusBadge = (status: string, type: string) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', text: string }> = {
@@ -156,10 +163,10 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">3</div>
+                    <div className="text-3xl font-bold">{stats?.active_vehicles || 0}</div>
                     <Icon name="Truck" size={32} className="text-primary opacity-20" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">из 4 транспортных средств</p>
+                  <p className="text-xs text-muted-foreground mt-2">из {vehicles.length} транспортных средств</p>
                 </CardContent>
               </Card>
 
@@ -169,7 +176,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">2</div>
+                    <div className="text-3xl font-bold">{stats?.active_routes || 0}</div>
                     <Icon name="Route" size={32} className="text-primary opacity-20" />
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">в процессе выполнения</p>
@@ -182,10 +189,10 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">4</div>
+                    <div className="text-3xl font-bold">{requests.length}</div>
                     <Icon name="FileText" size={32} className="text-primary opacity-20" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">1 ожидает утверждения</p>
+                  <p className="text-xs text-muted-foreground mt-2">{stats?.pending_requests || 0} ожидает утверждения</p>
                 </CardContent>
               </Card>
 
@@ -195,10 +202,10 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">189 л</div>
+                    <div className="text-3xl font-bold">{stats?.total_fuel || 0} л</div>
                     <Icon name="Fuel" size={32} className="text-primary opacity-20" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">за последние сутки</p>
+                  <p className="text-xs text-muted-foreground mt-2">активные рейсы</p>
                 </CardContent>
               </Card>
             </div>
@@ -215,12 +222,12 @@ const Index = () => {
                     .map((route) => (
                       <div key={route.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
-                          <p className="font-medium">{route.vehicle}</p>
-                          <p className="text-sm text-muted-foreground">{route.driver}</p>
+                          <p className="font-medium">{route.vehicle_number}</p>
+                          <p className="text-sm text-muted-foreground">{route.driver_name}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{route.distance}</p>
-                          <p className="text-xs text-muted-foreground">{route.fuel}</p>
+                          <p className="text-sm font-medium">{route.distance_km} км</p>
+                          <p className="text-xs text-muted-foreground">{route.fuel_liters} л</p>
                         </div>
                       </div>
                     ))}
@@ -241,7 +248,7 @@ const Index = () => {
                         </div>
                         <div>
                           <p className="font-medium text-sm">{driver.name}</p>
-                          <p className="text-xs text-muted-foreground">{driver.vehicle}</p>
+                          <p className="text-xs text-muted-foreground">{driver.vehicle_number || '-'}</p>
                         </div>
                       </div>
                       {getStatusBadge(driver.status, 'driver')}
@@ -321,9 +328,9 @@ const Index = () => {
                     {requests.map((request) => (
                       <TableRow key={request.id}>
                         <TableCell className="font-medium">{request.id}</TableCell>
-                        <TableCell>{request.date}</TableCell>
-                        <TableCell>{request.from}</TableCell>
-                        <TableCell>{request.to}</TableCell>
+                        <TableCell>{new Date(request.date).toLocaleDateString('ru-RU')}</TableCell>
+                        <TableCell>{request.from_address}</TableCell>
+                        <TableCell>{request.to_address}</TableCell>
                         <TableCell>{getStatusBadge(request.priority, 'priority')}</TableCell>
                         <TableCell>{getStatusBadge(request.status, 'request')}</TableCell>
                       </TableRow>
@@ -416,10 +423,10 @@ const Index = () => {
                     {routes.map((route) => (
                       <TableRow key={route.id}>
                         <TableCell className="font-medium">{route.id}</TableCell>
-                        <TableCell>{route.vehicle}</TableCell>
-                        <TableCell>{route.driver}</TableCell>
-                        <TableCell>{route.distance}</TableCell>
-                        <TableCell>{route.fuel}</TableCell>
+                        <TableCell>{route.vehicle_number}</TableCell>
+                        <TableCell>{route.driver_name}</TableCell>
+                        <TableCell>{route.distance_km} км</TableCell>
+                        <TableCell>{route.fuel_liters} л</TableCell>
                         <TableCell>{getStatusBadge(route.status, 'route')}</TableCell>
                       </TableRow>
                     ))}
@@ -506,7 +513,7 @@ const Index = () => {
                       <TableRow key={driver.id}>
                         <TableCell className="font-medium">{driver.name}</TableCell>
                         <TableCell>{driver.license}</TableCell>
-                        <TableCell>{driver.vehicle}</TableCell>
+                        <TableCell>{driver.vehicle_number || '-'}</TableCell>
                         <TableCell>{getStatusBadge(driver.status, 'driver')}</TableCell>
                       </TableRow>
                     ))}
