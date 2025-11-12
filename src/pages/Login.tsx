@@ -92,7 +92,15 @@ const Login = () => {
               {isLoading ? 'Вход...' : 'Войти'}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-600">
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Нет аккаунта?{' '}
+            <a href="/register" className="text-primary hover:underline font-medium">
+              Зарегистрироваться
+            </a>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-gray-600">
             <p className="font-medium mb-1">Тестовые учётные записи:</p>
             <p>Диспетчер: dispatcher / admin</p>
             <p>Водитель: driver1 / admin</p>
