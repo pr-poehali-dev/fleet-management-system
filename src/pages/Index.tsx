@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { fetchVehicles, fetchDrivers, fetchRequests, fetchRoutes, fetchStats } from '@/lib/api';
 import RequestForm from '@/components/RequestForm';
@@ -60,6 +61,8 @@ const Index = () => {
   const navigate = useNavigate();
   const userName = localStorage.getItem('user_name') || 'Пользователь';
   const userRole = localStorage.getItem('user_role') || 'driver';
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
@@ -67,6 +70,36 @@ const Index = () => {
     localStorage.removeItem('user_name');
     navigate('/login');
   };
+
+  const acceptRequest = useMutation({
+    mutationFn: async (requestId: number) => {
+      const response = await fetch(`https://functions.poehali.dev/afa79f4a-120a-4f80-9fc8-950ee685fd2c?entity=requests`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: requestId,
+          status: 'approved'
+        })
+      });
+      if (!response.ok) throw new Error('Ошибка принятия заявки');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      toast({
+        title: 'Успешно',
+        description: 'Заявка принята'
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось принять заявку',
+        variant: 'destructive'
+      });
+    }
+  });
   
   const { data: vehicles = [] } = useQuery<Vehicle[]>({
     queryKey: ['vehicles'],
@@ -339,9 +372,14 @@ const Index = () => {
                         {userRole === 'driver' && (
                           <TableCell>
                             {request.status === 'pending' && (
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => acceptRequest.mutate(request.id)}
+                                disabled={acceptRequest.isPending}
+                              >
                                 <Icon name="Check" size={14} className="mr-1" />
-                                Принять
+                                {acceptRequest.isPending ? 'Принятие...' : 'Принять'}
                               </Button>
                             )}
                           </TableCell>
