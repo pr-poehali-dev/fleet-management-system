@@ -140,7 +140,7 @@ const Index = () => {
         <nav className="p-4 space-y-1">
           {[
             { id: 'dashboard', icon: 'LayoutDashboard', label: 'Дашборд', roles: ['dispatcher', 'driver'] },
-            { id: 'requests', icon: 'FileText', label: 'Заявки', roles: ['dispatcher'] },
+            { id: 'requests', icon: 'FileText', label: 'Заявки', roles: ['dispatcher', 'driver'] },
             { id: 'routes', icon: 'Route', label: 'Рейсы', roles: ['dispatcher'] },
             { id: 'drivers', icon: 'UserCircle', label: 'Водители', roles: ['dispatcher'] },
             { id: 'waybills', icon: 'FileCheck', label: 'Путевые листы', roles: ['dispatcher', 'driver'] },
@@ -225,14 +225,14 @@ const Index = () => {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Расход топлива</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Водители</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">{stats?.total_fuel || 0} л</div>
-                    <Icon name="Fuel" size={32} className="text-primary opacity-20" />
+                    <div className="text-3xl font-bold">{drivers.length}</div>
+                    <Icon name="Users" size={32} className="text-primary opacity-20" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">активные рейсы</p>
+                  <p className="text-xs text-muted-foreground mt-2">{drivers.filter(d => d.status === 'available').length} доступны</p>
                 </CardContent>
               </Card>
             </div>
@@ -254,7 +254,7 @@ const Index = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium">{route.distance_km} км</p>
-                          <p className="text-xs text-muted-foreground">{route.fuel_liters} л</p>
+                          <p className="text-xs text-muted-foreground">В пути</p>
                         </div>
                       </div>
                     ))}
@@ -292,23 +292,25 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight">Заявки</h2>
-                <p className="text-muted-foreground">Управление заявками на перевозки</p>
+                <p className="text-muted-foreground">{userRole === 'driver' ? 'Доступные заявки на перевозки' : 'Управление заявками на перевозки'}</p>
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Icon name="Plus" size={16} className="mr-2" />
-                    Новая заявка
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Создание заявки</DialogTitle>
-                    <DialogDescription>Заполните данные для новой заявки на перевозку</DialogDescription>
-                  </DialogHeader>
-                  <RequestForm />
-                </DialogContent>
-              </Dialog>
+              {userRole === 'dispatcher' && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Icon name="Plus" size={16} className="mr-2" />
+                      Новая заявка
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Создание заявки</DialogTitle>
+                      <DialogDescription>Заполните данные для новой заявки на перевозку</DialogDescription>
+                    </DialogHeader>
+                    <RequestForm />
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             <Card>
@@ -322,6 +324,7 @@ const Index = () => {
                       <TableHead>Куда</TableHead>
                       <TableHead>Приоритет</TableHead>
                       <TableHead>Статус</TableHead>
+                      {userRole === 'driver' && <TableHead>Действия</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -333,6 +336,16 @@ const Index = () => {
                         <TableCell>{request.to_address}</TableCell>
                         <TableCell>{getStatusBadge(request.priority, 'priority')}</TableCell>
                         <TableCell>{getStatusBadge(request.status, 'request')}</TableCell>
+                        {userRole === 'driver' && (
+                          <TableCell>
+                            {request.status === 'pending' && (
+                              <Button size="sm" variant="outline">
+                                <Icon name="Check" size={14} className="mr-1" />
+                                Принять
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -375,7 +388,6 @@ const Index = () => {
                       <TableHead>Транспорт</TableHead>
                       <TableHead>Водитель</TableHead>
                       <TableHead>Расстояние</TableHead>
-                      <TableHead>Топливо</TableHead>
                       <TableHead>Статус</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -386,7 +398,6 @@ const Index = () => {
                         <TableCell>{route.vehicle_number}</TableCell>
                         <TableCell>{route.driver_name}</TableCell>
                         <TableCell>{route.distance_km} км</TableCell>
-                        <TableCell>{route.fuel_liters} л</TableCell>
                         <TableCell>{getStatusBadge(route.status, 'route')}</TableCell>
                       </TableRow>
                     ))}
@@ -609,40 +620,35 @@ const Index = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>ТС</TableHead>
+                          <TableHead>Модель</TableHead>
                           <TableHead>Рейсов</TableHead>
                           <TableHead>Пробег</TableHead>
-                          <TableHead>Топливо</TableHead>
-                          <TableHead>Расход (л/100км)</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         <TableRow>
                           <TableCell className="font-medium">А123БВ777</TableCell>
+                          <TableCell>Mercedes Sprinter</TableCell>
                           <TableCell>24</TableCell>
                           <TableCell>3,420 км</TableCell>
-                          <TableCell>512 л</TableCell>
-                          <TableCell>15.0</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-medium">К456ЕР199</TableCell>
+                          <TableCell>КАМАЗ 5320</TableCell>
                           <TableCell>18</TableCell>
                           <TableCell>4,230 км</TableCell>
-                          <TableCell>1,185 л</TableCell>
-                          <TableCell>28.0</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-medium">Т789УС116</TableCell>
+                          <TableCell>ГАЗель Next</TableCell>
                           <TableCell>28</TableCell>
                           <TableCell>2,890 км</TableCell>
-                          <TableCell>347 л</TableCell>
-                          <TableCell>12.0</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-medium">М321НО197</TableCell>
+                          <TableCell>Iveco Daily</TableCell>
                           <TableCell>17</TableCell>
                           <TableCell>1,940 км</TableCell>
-                          <TableCell>291 л</TableCell>
-                          <TableCell>15.0</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>

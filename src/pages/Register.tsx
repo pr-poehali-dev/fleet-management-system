@@ -44,6 +44,24 @@ const Register = () => {
     setIsLoading(true);
 
     try {
+      const response = await fetch('https://functions.poehali.dev/391df338-eff3-4e68-bf62-5d942dedd678', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          username: formData.username,
+          password: formData.password,
+          full_name: formData.full_name,
+          role: formData.role
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка регистрации');
+      }
+
       toast({
         title: 'Успешно',
         description: 'Регистрация завершена! Войдите в систему.'

@@ -125,28 +125,15 @@ const RouteForm = () => {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="distance">Расстояние (км)</Label>
-          <Input
-            id="distance"
-            type="number"
-            placeholder="0"
-            value={formData.distance_km}
-            onChange={(e) => setFormData({ ...formData, distance_km: e.target.value })}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="fuel">Топливо (л)</Label>
-          <Input
-            id="fuel"
-            type="number"
-            placeholder="0"
-            value={formData.fuel_liters}
-            onChange={(e) => setFormData({ ...formData, fuel_liters: e.target.value })}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="distance">Расстояние (км)</Label>
+        <Input
+          id="distance"
+          type="number"
+          placeholder="0"
+          value={formData.distance_km}
+          onChange={(e) => setFormData({ ...formData, distance_km: e.target.value })}
+        />
       </div>
 
       <div className="flex gap-2 pt-2">

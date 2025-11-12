@@ -101,6 +101,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 })
             }
         
+        elif action == 'register':
+            username = body_data.get('username', '')
+            password = body_data.get('password', '')
+            full_name = body_data.get('full_name', '')
+            role = body_data.get('role', 'driver')
+            
+            if not username or not password or not full_name:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'All fields required'})
+                }
+            
+            import psycopg2
+            dsn = os.environ.get('DATABASE_URL')
+            
+            conn = psycopg2.connect(dsn)
+            cur = conn.cursor()
+            
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+            existing_user = cur.fetchone()
+            
+            if existing_user:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 409,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'Username already exists'})
+                }
+            
+            password_hash = hash_password(password)
+            
+            cur.execute(
+                "INSERT INTO users (username, password_hash, role, full_name) VALUES (%s, %s, %s, %s) RETURNING id",
+                (username, password_hash, role, full_name)
+            )
+            user_id = cur.fetchone()[0]
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 201,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'success': True, 'user_id': user_id})
+            }
+        
         elif action == 'verify':
             token = body_data.get('token', '')
             
