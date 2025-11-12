@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "Get all waybills",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Missing ID in update",
+      "method": "PUT",
+      "path": "/",
+      "body": {
+        "mileage_end": 150
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

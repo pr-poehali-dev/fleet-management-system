@@ -1,0 +1,45 @@
+{
+  "tests": [
+    {
+      "name": "Invalid login attempt",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "login",
+        "username": "nonexistent",
+        "password": "wrong"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "login"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify token without token",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "verify"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

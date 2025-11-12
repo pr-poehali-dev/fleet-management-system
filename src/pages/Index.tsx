@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { fetchVehicles, fetchDrivers, fetchRequests, fetchRoutes, fetchStats } from '@/lib/api';
+import RequestForm from '@/components/RequestForm';
+import RouteForm from '@/components/RouteForm';
 
 type Vehicle = {
   id: number;
@@ -54,6 +57,16 @@ type Stats = {
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const userName = localStorage.getItem('user_name') || 'Пользователь';
+  const userRole = localStorage.getItem('user_role') || 'driver';
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
+    navigate('/login');
+  };
   
   const { data: vehicles = [] } = useQuery<Vehicle[]>({
     queryKey: ['vehicles'],
@@ -126,12 +139,13 @@ const Index = () => {
         </div>
         <nav className="p-4 space-y-1">
           {[
-            { id: 'dashboard', icon: 'LayoutDashboard', label: 'Дашборд' },
-            { id: 'requests', icon: 'FileText', label: 'Заявки' },
-            { id: 'routes', icon: 'Route', label: 'Рейсы' },
-            { id: 'drivers', icon: 'UserCircle', label: 'Водители' },
-            { id: 'reports', icon: 'BarChart3', label: 'Отчеты' },
-          ].map((item) => (
+            { id: 'dashboard', icon: 'LayoutDashboard', label: 'Дашборд', roles: ['dispatcher', 'driver'] },
+            { id: 'requests', icon: 'FileText', label: 'Заявки', roles: ['dispatcher'] },
+            { id: 'routes', icon: 'Route', label: 'Рейсы', roles: ['dispatcher'] },
+            { id: 'drivers', icon: 'UserCircle', label: 'Водители', roles: ['dispatcher'] },
+            { id: 'waybills', icon: 'FileCheck', label: 'Путевые листы', roles: ['dispatcher', 'driver'] },
+            { id: 'reports', icon: 'BarChart3', label: 'Отчеты', roles: ['dispatcher'] },
+          ].filter(item => item.roles.includes(userRole)).map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -146,6 +160,19 @@ const Index = () => {
             </button>
           ))}
         </nav>
+        <div className="p-4 border-t border-sidebar-accent mt-auto">
+          <div className="flex items-center gap-3 mb-3 p-2 bg-sidebar-accent/30 rounded-md">
+            <Icon name="User" size={20} className="text-primary" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{userName}</p>
+              <p className="text-xs text-sidebar-foreground/60">{userRole === 'dispatcher' ? 'Диспетчер' : 'Водитель'}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+            <Icon name="LogOut" size={16} className="mr-2" />
+            Выход
+          </Button>
+        </div>
       </aside>
 
       <main className="flex-1 p-8">
@@ -279,34 +306,7 @@ const Index = () => {
                     <DialogTitle>Создание заявки</DialogTitle>
                     <DialogDescription>Заполните данные для новой заявки на перевозку</DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Дата</Label>
-                      <Input id="date" type="date" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="from">Откуда</Label>
-                      <Input id="from" placeholder="Адрес отправления" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="to">Куда</Label>
-                      <Input id="to" placeholder="Адрес назначения" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="priority">Приоритет</Label>
-                      <Select>
-                        <SelectTrigger id="priority">
-                          <SelectValue placeholder="Выберите приоритет" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Низкий</SelectItem>
-                          <SelectItem value="medium">Средний</SelectItem>
-                          <SelectItem value="high">Высокий</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button className="w-full">Создать заявку</Button>
-                  </div>
+                  <RequestForm />
                 </DialogContent>
               </Dialog>
             </div>
@@ -361,47 +361,7 @@ const Index = () => {
                     <DialogTitle>Планирование рейса</DialogTitle>
                     <DialogDescription>Назначьте ТС и водителя для маршрута</DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="vehicle">Транспортное средство</Label>
-                      <Select>
-                        <SelectTrigger id="vehicle">
-                          <SelectValue placeholder="Выберите ТС" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicles.map((v) => (
-                            <SelectItem key={v.id} value={v.id}>
-                              {v.number} — {v.model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="driver">Водитель</Label>
-                      <Select>
-                        <SelectTrigger id="driver">
-                          <SelectValue placeholder="Выберите водителя" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {drivers.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>
-                              {d.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="distance">Расстояние (км)</Label>
-                      <Input id="distance" type="number" placeholder="0" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fuel">Топливо (л)</Label>
-                      <Input id="fuel" type="number" placeholder="0" />
-                    </div>
-                    <Button className="w-full">Создать рейс</Button>
-                  </div>
+                  <RouteForm />
                 </DialogContent>
               </Dialog>
             </div>
@@ -517,6 +477,115 @@ const Index = () => {
                         <TableCell>{getStatusBadge(driver.status, 'driver')}</TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'waybills' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Путевые листы</h2>
+                <p className="text-muted-foreground">Управление путевыми листами</p>
+              </div>
+              {userRole === 'dispatcher' && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Icon name="Plus" size={16} className="mr-2" />
+                      Выписать путевой лист
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Создание путевого листа</DialogTitle>
+                      <DialogDescription>Выберите транспорт и водителя</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label>Номер путевого листа</Label>
+                        <Input placeholder="Будет сгенерирован автоматически" disabled />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="wb-vehicle">Транспорт</Label>
+                        <Select>
+                          <SelectTrigger id="wb-vehicle">
+                            <SelectValue placeholder="Выберите ТС" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {vehicles.map((v) => (
+                              <SelectItem key={v.id} value={v.number}>
+                                {v.number} — {v.model}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="wb-driver">Водитель</Label>
+                        <Select>
+                          <SelectTrigger id="wb-driver">
+                            <SelectValue placeholder="Выберите водителя" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {drivers.map((d) => (
+                              <SelectItem key={d.id} value={d.name}>
+                                {d.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="wb-mileage">Пробег нач. (км)</Label>
+                          <Input id="wb-mileage" type="number" placeholder="0" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="wb-fuel">Топливо нач. (л)</Label>
+                          <Input id="wb-fuel" type="number" placeholder="0" />
+                        </div>
+                      </div>
+                      <Button className="w-full">Выписать путевой лист</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>№ Путевого листа</TableHead>
+                      <TableHead>Транспорт</TableHead>
+                      <TableHead>Водитель</TableHead>
+                      <TableHead>Дата выдачи</TableHead>
+                      <TableHead>Пробег</TableHead>
+                      <TableHead>Статус</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">ПЛ-20241112-001</TableCell>
+                      <TableCell>А123БВ777</TableCell>
+                      <TableCell>Иванов И.И.</TableCell>
+                      <TableCell>12.11.2024</TableCell>
+                      <TableCell>120 км</TableCell>
+                      <TableCell><Badge>Выдан</Badge></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">ПЛ-20241112-002</TableCell>
+                      <TableCell>К456ЕР199</TableCell>
+                      <TableCell>Петров П.П.</TableCell>
+                      <TableCell>12.11.2024</TableCell>
+                      <TableCell>85 км</TableCell>
+                      <TableCell><Badge variant="outline">Закрыт</Badge></TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </CardContent>

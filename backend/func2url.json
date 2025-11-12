@@ -1,3 +1,5 @@
 {
+  "waybills": "https://functions.poehali.dev/a760bd88-6650-4db8-bcfd-531bf2a577c1",
+  "auth": "https://functions.poehali.dev/391df338-eff3-4e68-bf62-5d942dedd678",
   "fleet-api": "https://functions.poehali.dev/afa79f4a-120a-4f80-9fc8-950ee685fd2c"
 }

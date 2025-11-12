@@ -81,16 +81,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
             elif entity == 'requests':
                 cur.execute(
-                    "INSERT INTO requests (date, from_address, to_address, status, priority) VALUES (%s, %s, %s, %s, %s) RETURNING *",
+                    """INSERT INTO requests (date, from_address, to_address, status, priority, 
+                       cargo_type, cargo_weight_kg, passengers_count, required_vehicle_type) 
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                     (body_data['date'], body_data['from_address'], body_data['to_address'], 
-                     body_data.get('status', 'pending'), body_data.get('priority', 'medium'))
+                     body_data.get('status', 'pending'), body_data.get('priority', 'medium'),
+                     body_data.get('cargo_type'), body_data.get('cargo_weight_kg'),
+                     body_data.get('passengers_count'), body_data.get('required_vehicle_type'))
                 )
             elif entity == 'routes':
                 cur.execute(
-                    "INSERT INTO routes (vehicle_number, driver_name, distance_km, fuel_liters, status) VALUES (%s, %s, %s, %s, %s) RETURNING *",
+                    """INSERT INTO routes (vehicle_number, driver_name, distance_km, fuel_liters, status, 
+                       request_id, waybill_number) 
+                       VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                     (body_data['vehicle_number'], body_data['driver_name'], 
                      body_data.get('distance_km', 0), body_data.get('fuel_liters', 0), 
-                     body_data.get('status', 'planned'))
+                     body_data.get('status', 'planned'), body_data.get('request_id'),
+                     body_data.get('waybill_number'))
                 )
             else:
                 return {
